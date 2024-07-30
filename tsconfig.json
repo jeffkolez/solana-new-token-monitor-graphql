@@ -1,12 +1,13 @@
 {
     "compilerOptions": {
-        "module": "CommonJS",
-        "target": "es6",
-        "strictNullChecks": false,
-        "strictFunctionTypes": false,
+        "module": "ESNext",
+        "moduleResolution": "Bundler",
+        "target": "ESNext",
+        "strict": true,
         "esModuleInterop": true,
+        "skipLibCheck": true,
         "forceConsistentCasingInFileNames": true,
-        "resolveJsonModule": true,                           /* Enable importing .json files. */
+        "outDir": "./dist"
     },
     "exclude": [
         "node_modules",
