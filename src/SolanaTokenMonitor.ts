@@ -33,81 +33,81 @@ export class SolanaTokenMonitor {
             solanaConnection.onLogs(
                 rayFee,
                 async ({ logs, err, signature }) => {
-                        try {
-                            if (err) {
-                                console.error(`connection contains error, ${err}`);
-                                return;
+                    try {
+                        if (err) {
+                            console.error(`connection contains error, ${err}`);
+                            return;
+                        }
+
+                        let signer = '';
+                        let baseAddress = '';
+                        let baseDecimals = 0;
+                        let baseLpAmount = 0;
+                        let quoteAddress = '';
+                        let quoteDecimals = 0;
+                        let quoteLpAmount = 0;
+
+                        const parsedTransaction = await solanaConnection.getParsedTransaction(
+                            signature,
+                            {
+                                maxSupportedTransactionVersion: 0,
+                                commitment: 'confirmed',
                             }
+                        );
 
-                            let signer = '';
-                            let baseAddress = '';
-                            let baseDecimals = 0;
-                            let baseLpAmount = 0;
-                            let quoteAddress = '';
-                            let quoteDecimals = 0;
-                            let quoteLpAmount = 0;
+                        if (parsedTransaction && parsedTransaction?.meta?.err == null) {
 
-                            const parsedTransaction = await solanaConnection.getParsedTransaction(
-                                signature,
-                                {
-                                    maxSupportedTransactionVersion: 0,
-                                    commitment: 'confirmed',
-                                }
+                            signer =
+                            parsedTransaction?.transaction.message.accountKeys[0].pubkey.toString();
+
+                            const postTokenBalances = parsedTransaction?.meta?.postTokenBalances;
+
+                            const baseInfo = postTokenBalances?.find(
+                                (balance) =>
+                                    balance.owner ===
+                                        '5Q544fKrFoe6tsEbD7S8EmxGTJYAKtTVhAW5Q5pge4j1' &&
+                                        balance.mint !== 'So11111111111111111111111111111111111111112'
                             );
 
-                            if (parsedTransaction && parsedTransaction?.meta?.err == null) {
-
-                                signer =
-                                parsedTransaction?.transaction.message.accountKeys[0].pubkey.toString();
-
-                                const postTokenBalances = parsedTransaction?.meta?.postTokenBalances;
-
-                                const baseInfo = postTokenBalances?.find(
-                                    (balance) =>
-                                        balance.owner ===
-                                            '5Q544fKrFoe6tsEbD7S8EmxGTJYAKtTVhAW5Q5pge4j1' &&
-                                            balance.mint !== 'So11111111111111111111111111111111111111112'
-                                );
-
-                                if (baseInfo) {
-                                    baseAddress = baseInfo.mint;
-                                    baseDecimals = baseInfo.uiTokenAmount.decimals;
-                                    baseLpAmount = baseInfo.uiTokenAmount.uiAmount ?? 0;
-                                }
-
-                                const quoteInfo = postTokenBalances?.find(
-                                    (balance) =>
-                                        balance.owner ==
-                                            '5Q544fKrFoe6tsEbD7S8EmxGTJYAKtTVhAW5Q5pge4j1' &&
-                                            balance.mint == 'So11111111111111111111111111111111111111112'
-                                );
-
-                                if (quoteInfo) {
-                                    quoteAddress = quoteInfo.mint;
-                                    quoteDecimals = quoteInfo.uiTokenAmount.decimals;
-                                    quoteLpAmount = quoteInfo.uiTokenAmount.uiAmount ?? 0;
-                                }
-
-                                console.log(`found new token: ${baseAddress}`);
-
-                                const newTokenData = {
-                                    address: baseAddress,
-                                    creator: signer,
-                                    timestamp: new Date().toISOString(),
-                                    quoteAddress: quoteAddress,
-                                    quoteDecimals: quoteDecimals,
-                                    quoteLpAmount: quoteLpAmount
-                                };
-
-                                await client.mutate({
-                                    mutation: ADD_TOKEN_MUTATION,
-                                    variables: newTokenData
-                                });
+                            if (baseInfo) {
+                                baseAddress = baseInfo.mint;
+                                baseDecimals = baseInfo.uiTokenAmount.decimals;
+                                baseLpAmount = baseInfo.uiTokenAmount.uiAmount ?? 0;
                             }
-                        } catch (error) {
-                            const errorMessage = `error occured in new solana token log callback function, ${JSON.stringify(error, null, 2)}`;
-                            console.error(errorMessage);
-                            return null;
+
+                            const quoteInfo = postTokenBalances?.find(
+                                (balance) =>
+                                    balance.owner ==
+                                        '5Q544fKrFoe6tsEbD7S8EmxGTJYAKtTVhAW5Q5pge4j1' &&
+                                        balance.mint == 'So11111111111111111111111111111111111111112'
+                            );
+
+                            if (quoteInfo) {
+                                quoteAddress = quoteInfo.mint;
+                                quoteDecimals = quoteInfo.uiTokenAmount.decimals;
+                                quoteLpAmount = quoteInfo.uiTokenAmount.uiAmount ?? 0;
+                            }
+
+                            console.log(`found new token: ${baseAddress}`);
+
+                            const newTokenData = {
+                                address: baseAddress,
+                                creator: signer,
+                                timestamp: new Date().toISOString(),
+                                quoteAddress: quoteAddress,
+                                quoteDecimals: quoteDecimals,
+                                quoteLpAmount: quoteLpAmount
+                            };
+
+                            await client.mutate({
+                                mutation: ADD_TOKEN_MUTATION,
+                                variables: newTokenData
+                            });
+                        }
+                    } catch (error) {
+                        const errorMessage = `error occured in new solana token log callback function, ${JSON.stringify(error, null, 2)}`;
+                        console.error(errorMessage);
+                        return null;
                     }
                 },
                 'confirmed'
