@@ -7,18 +7,19 @@ export const typeDefs = `#graphql
     timestamp: String
     quoteAddress: String
     quoteDecimal: Float
-    quoteLpAmount: String
+    quoteLpAmount: Float
   }
 
   type Query {
     latestTokens: [Token]
+    getTokenByAddress(address: String!): Token
   }
 
   type Mutation {
     addToken(
       address: String!,
-      creator: String!,
-      timestamp: String!,
+      creator: String,
+      timestamp: String,
       quoteAddress: String,
       quoteDecimal: Float,
       quoteLpAmount: Float

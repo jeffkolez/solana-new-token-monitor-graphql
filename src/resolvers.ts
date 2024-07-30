@@ -10,6 +10,7 @@ let latestTokens: {
 export const resolvers = {
   Query: {
     latestTokens: () => latestTokens,
+    getTokenByAddress: () => latestTokens.find(token => token.address === address),
   },
   Mutation: {
     addToken: (
