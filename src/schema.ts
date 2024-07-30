@@ -8,11 +8,22 @@ export const typeDefs = `#graphql
     quoteAddress: String
     quoteDecimal: Float
     quoteLpAmount: Float
+    metaData: TokenMetadata
   }
+
+  type TokenMetadata {
+    hasFreezeAuthority: Boolean
+    hasMintAuthority: Boolean
+  }
+
+input TokenMetadataInput {
+  hasFreezeAuthority: Boolean
+  hasMintAuthority: Boolean
+}
 
   type Query {
     latestTokens: [Token]
-    getTokenByAddress(address: String!): Token
+    getTokenMetadata(address: String!): TokenMetadata
   }
 
   type Mutation {
@@ -22,7 +33,8 @@ export const typeDefs = `#graphql
       timestamp: String,
       quoteAddress: String,
       quoteDecimal: Float,
-      quoteLpAmount: Float
+      quoteLpAmount: Float,
+      metaData: TokenMetadataInput
     ): Token
   }
 `;

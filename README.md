@@ -16,12 +16,3 @@ Running the sniper:
 - In your terminal, run `npm run monitor`
 
 Your terminal should show `monitoring new token launches..`
-
-<img width="1030" alt="monitor_new_token_image" src="https://github.com/archiesnipes/solana-new-token-monitor/assets/159651488/1afb4714-7106-4d2d-95c0-489ba2021ac0">
-
-## Contact
-
-For community discussions on sniper bots:
-[![](https://img.shields.io/discord/1201826085655023616?color=5865F2&logo=Discord&style=flat-square)](https://discord.gg/47ddgNwa3b)
-
-For any business inquiries, reach out at discord: `archiesnipes`

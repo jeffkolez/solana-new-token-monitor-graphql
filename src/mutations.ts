@@ -7,7 +7,8 @@ export const ADD_TOKEN_MUTATION = gql`
     $timestamp: String!,
     $quoteAddress: String,
     $quoteDecimal: Float,
-    $quoteLpAmount: Float
+    $quoteLpAmount: Float,
+    $metaData: TokenMetadataInput
   ) {
     addToken(
       address: $address,
@@ -15,7 +16,8 @@ export const ADD_TOKEN_MUTATION = gql`
       timestamp: $timestamp,
       quoteAddress: $quoteAddress,
       quoteDecimal: $quoteDecimal,
-      quoteLpAmount: $quoteLpAmount
+      quoteLpAmount: $quoteLpAmount,
+      metaData: $metaData
     ) {
       address
       creator
@@ -23,6 +25,10 @@ export const ADD_TOKEN_MUTATION = gql`
       quoteAddress
       quoteDecimal
       quoteLpAmount
+      metaData {
+          hasMintAuthority
+          hasFreezeAuthority
+      }
     }
   }
 `;

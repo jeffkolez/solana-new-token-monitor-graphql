@@ -1,4 +1,4 @@
-import { Connection, PublicKey } from '@solana/web3.js';
+import { Connection, PublicKey, ParsedAccountData } from '@solana/web3.js';
 import { default as pkg } from '@apollo/client';
 const { ApolloClient, InMemoryCache } = pkg;
 import { rayFee, solanaConnection } from '../constants';
@@ -20,7 +20,6 @@ export class SolanaTokenMonitor {
     constructor() {
         this.connection = solanaConnection;
         this.signature = rayFee;
-        
     }
 
     async monitor(): Promise<TokenData | null> {
@@ -30,7 +29,7 @@ export class SolanaTokenMonitor {
             cache: new InMemoryCache(),
           });
         try {
-            solanaConnection.onLogs(
+            this.connection.onLogs(
                 rayFee,
                 async ({ logs, err, signature }) => {
                     try {
@@ -47,7 +46,7 @@ export class SolanaTokenMonitor {
                         let quoteDecimals = 0;
                         let quoteLpAmount = 0;
 
-                        const parsedTransaction = await solanaConnection.getParsedTransaction(
+                        const parsedTransaction = await this.connection.getParsedTransaction(
                             signature,
                             {
                                 maxSupportedTransactionVersion: 0,
@@ -90,13 +89,16 @@ export class SolanaTokenMonitor {
 
                             console.log(`found new token: ${baseAddress}`);
 
+                            let metadata = await this.metaLookup(baseAddress);
+
                             const newTokenData = {
                                 address: baseAddress,
                                 creator: signer,
                                 timestamp: new Date().toISOString(),
                                 quoteAddress: quoteAddress,
                                 quoteDecimals: quoteDecimals,
-                                quoteLpAmount: quoteLpAmount
+                                quoteLpAmount: quoteLpAmount,
+                                metaData: metadata
                             };
 
                             await client.mutate({
@@ -121,19 +123,38 @@ export class SolanaTokenMonitor {
     }
 
     async metaLookup(address: string): Promise<any> {
+        const tokenPublicKey = new PublicKey(address);
         try {
-            const publicKey = new PublicKey(address);
-            const tokenAccountInfo = await this.connection.getParsedAccountInfo(publicKey);
-
-            if (tokenAccountInfo.value) {
-                const tokenData = tokenAccountInfo.value.data;
-                return tokenData;
-            } else {
-                throw new Error('Token not found');
+            const tokenAccountInfo = await this.connection.getParsedAccountInfo(tokenPublicKey);
+  
+            if (!tokenAccountInfo.value) {
+                throw new Error('Token account not found');
             }
+
+            const tokenData = tokenAccountInfo.value.data as any;
+            const parsedData = tokenData.parsed;
+
+            console.log(parsedData);
+            
+            if (!parsedData || !parsedData.info) {
+                throw new Error('Token data is not in the expected format');
+            }
+            
+            const tokenInfo = parsedData.info;
+            const mintAuthority = tokenInfo.mintAuthority;
+            const freezeAuthority = tokenInfo.freezeAuthority;
+            const hasMintAuthority = mintAuthority !== null && mintAuthority !== undefined;
+            const hasFreezeAuthority = freezeAuthority !== null && freezeAuthority !== undefined;
+
+            return {
+                hasMintAuthority,
+                hasFreezeAuthority,
+            };
         } catch (error) {
-            console.error('Error fetching token metadata:', error);
-            throw error;
+            const errorMessage = `Can't find token, ${address}`;
+            console.error(errorMessage);
+            return null;
         }
+        
     }
 }

@@ -1,3 +1,5 @@
+import { SolanaTokenMonitor } from './SolanaTokenMonitor';
+
 let latestTokens: {
   address: string;
   creator: string;
@@ -5,12 +7,28 @@ let latestTokens: {
   quoteAddress: string;
   quoteDecimal: number;
   quoteLpAmount: number;
+  metaData: {
+    hasFreezeAuthority: boolean;
+    hasMintAuthority: boolean;
+  };
 }[] = [];
 
 export const resolvers = {
   Query: {
     latestTokens: () => latestTokens,
-    getTokenByAddress: () => latestTokens.find(token => token.address === address),
+    getTokenMetadata: async (_: any, { address }: { address: string }) => {
+      const solanaMonitor = new SolanaTokenMonitor();
+      try {
+        const metadata = await solanaMonitor.metaLookup(address);
+        return {
+          hasMintAuthority: metadata.hasMintAuthority ? true : false,
+          hasFreezeAuthority: metadata.hasFreezeAuthority ? true : false,
+        };
+      } catch (error) {
+        console.error('Error fetching token metadata:', error);
+        throw new Error('Unable to fetch token metadata');
+      }
+    },
   },
   Mutation: {
     addToken: (
@@ -22,6 +40,7 @@ export const resolvers = {
         quoteAddress,
         quoteDecimal,
         quoteLpAmount,
+        metaData,
       }: {
         address: string;
         creator: string;
@@ -29,6 +48,10 @@ export const resolvers = {
         quoteAddress: string;
         quoteDecimal: number;
         quoteLpAmount: number;
+        metaData: {
+          hasFreezeAuthority: boolean;
+          hasMintAuthority: boolean;
+        }
       }
     ) => {
       const newToken = {
@@ -38,6 +61,7 @@ export const resolvers = {
         quoteAddress,
         quoteDecimal,
         quoteLpAmount,
+        metaData
       };
       latestTokens.push(newToken);
       return newToken;
