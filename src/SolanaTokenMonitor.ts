@@ -3,6 +3,7 @@ import { default as pkg } from '@apollo/client';
 const { ApolloClient, InMemoryCache } = pkg;
 import { rayFee, solanaConnection } from '../constants';
 import { ADD_TOKEN_MUTATION } from './mutations';
+import { programs } from '@metaplex/js';
 
 interface TokenData {
   address: string;
@@ -91,20 +92,25 @@ export class SolanaTokenMonitor {
 
                             let metadata = await this.metaLookup(baseAddress);
 
-                            const newTokenData = {
-                                address: baseAddress,
-                                creator: signer,
-                                timestamp: new Date().toISOString(),
-                                quoteAddress: quoteAddress,
-                                quoteDecimals: quoteDecimals,
-                                quoteLpAmount: quoteLpAmount,
-                                metaData: metadata
-                            };
-
-                            await client.mutate({
-                                mutation: ADD_TOKEN_MUTATION,
-                                variables: newTokenData
-                            });
+                            if (! metadata.hasFreezeAuthority && ! metadata.hasMintAuthority) {
+                                console.log(`We have a valid coin`);
+                                const newTokenData = {
+                                    address: baseAddress,
+                                    creator: signer,
+                                    timestamp: new Date().toISOString(),
+                                    quoteAddress: quoteAddress,
+                                    quoteDecimals: quoteDecimals,
+                                    quoteLpAmount: quoteLpAmount,
+                                    metaData: metadata
+                                };
+    
+                                await client.mutate({
+                                    mutation: ADD_TOKEN_MUTATION,
+                                    variables: newTokenData
+                                });
+                            } else {
+                                console.log("Scam coin!");
+                            }
                         }
                     } catch (error) {
                         const errorMessage = `error occured in new solana token log callback function, ${JSON.stringify(error, null, 2)}`;
@@ -133,20 +139,29 @@ export class SolanaTokenMonitor {
 
             const tokenData = tokenAccountInfo.value.data as any;
             const parsedData = tokenData.parsed;
-
-            console.log(parsedData);
             
             if (!parsedData || !parsedData.info) {
                 throw new Error('Token data is not in the expected format');
             }
+
+            const { metadata: { Metadata } } = programs;
+            const metadataPDA = await Metadata.getPDA(tokenPublicKey);
+            const metadataAccount = await Metadata.load(this.connection, metadataPDA);
+            const metadataAccountMeta = metadataAccount.data as any;
             
             const tokenInfo = parsedData.info;
-            const mintAuthority = tokenInfo.mintAuthority;
-            const freezeAuthority = tokenInfo.freezeAuthority;
-            const hasMintAuthority = mintAuthority !== null && mintAuthority !== undefined;
-            const hasFreezeAuthority = freezeAuthority !== null && freezeAuthority !== undefined;
+            const hasMintAuthority = tokenInfo.mintAuthority !== null && tokenInfo.mintAuthority !== undefined;
+            const hasFreezeAuthority = tokenInfo.freezeAuthority !== null && tokenInfo.freezeAuthority !== undefined;
+            const tokenName = metadataAccountMeta.data.name;
+            const tokenSymbol = metadataAccountMeta.data.symbol;
+            const tokenUri = metadataAccountMeta.data.uri;
+            const tokenDescription = await this.getTokenDescription(tokenUri);
 
             return {
+                tokenName,
+                tokenSymbol,
+                tokenUri,
+                tokenDescription,
                 hasMintAuthority,
                 hasFreezeAuthority,
             };
@@ -155,6 +170,31 @@ export class SolanaTokenMonitor {
             console.error(errorMessage);
             return null;
         }
-        
     }
+
+    async fetchJsonFromUri(uri: string) {
+        try {
+            const response = await fetch(uri);
+            if (!response.ok) {
+                throw new Error(`Failed to fetch ${uri}: ${response.statusText}`);
+            }
+
+            return await response.json();
+        } catch (error) {
+            console.error(`Error fetching JSON from ${uri}:`, error);
+            return null;
+        }
+    }
+
+    async getTokenDescription(uri: string) {
+        if (uri === undefined) {
+            return "";
+        }
+        const jsonData = await this.fetchJsonFromUri(uri);
+      
+        if (jsonData && jsonData.description) {
+            return jsonData.description;
+        }
+        return null;
+      }
 }

@@ -26,6 +26,10 @@ export const ADD_TOKEN_MUTATION = gql`
       quoteDecimal
       quoteLpAmount
       metaData {
+          tokenName
+          tokenSymbol
+          tokenUri
+          tokenDescription
           hasMintAuthority
           hasFreezeAuthority
       }

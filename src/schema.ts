@@ -12,11 +12,19 @@ export const typeDefs = `#graphql
   }
 
   type TokenMetadata {
+    tokenName: String
+    tokenSymbol: String
+    tokenUri: String
+    tokenDescription: String
     hasFreezeAuthority: Boolean
     hasMintAuthority: Boolean
   }
 
 input TokenMetadataInput {
+  tokenName: String
+  tokenSymbol: String
+  tokenUri: String
+  tokenDescription: String
   hasFreezeAuthority: Boolean
   hasMintAuthority: Boolean
 }

@@ -8,6 +8,10 @@ let latestTokens: {
   quoteDecimal: number;
   quoteLpAmount: number;
   metaData: {
+    tokenName: string;
+    tokenSymbol: string;
+    tokenUri: string;
+    tokenDescription: string;
     hasFreezeAuthority: boolean;
     hasMintAuthority: boolean;
   };
@@ -21,6 +25,10 @@ export const resolvers = {
       try {
         const metadata = await solanaMonitor.metaLookup(address);
         return {
+          tokenName: metadata.tokenName,
+          tokenSymbol: metadata.tokenSymbol,
+          tokenUri: metadata.tokenUri,
+          tokenDescription: metadata.tokenDescription,
           hasMintAuthority: metadata.hasMintAuthority ? true : false,
           hasFreezeAuthority: metadata.hasFreezeAuthority ? true : false,
         };
@@ -49,6 +57,10 @@ export const resolvers = {
         quoteDecimal: number;
         quoteLpAmount: number;
         metaData: {
+          tokenName: string;
+          tokenSymbol: string;
+          tokenUri: string;
+          tokenDescription: string;
           hasFreezeAuthority: boolean;
           hasMintAuthority: boolean;
         }
