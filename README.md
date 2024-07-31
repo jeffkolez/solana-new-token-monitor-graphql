@@ -16,3 +16,5 @@ Running the sniper:
 - In your terminal, run `npm run monitor`
 
 Your terminal should show `monitoring new token launches..`
+
+[Dexscreener API](https://docs.dexscreener.com/api/reference)

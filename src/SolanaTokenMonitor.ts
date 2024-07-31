@@ -4,15 +4,8 @@ const { ApolloClient, InMemoryCache } = pkg;
 import { rayFee, solanaConnection } from '../constants';
 import { ADD_TOKEN_MUTATION } from './mutations';
 import { programs } from '@metaplex/js';
-
-interface TokenData {
-  address: string;
-  creator: string;
-  timestamp: string;
-  quoteAddress: string;
-  quoteDecimals: number;
-  quoteLpAmount: number;
-}
+import { TokenData } from './interfaces/tokenData';
+import { DexCalculators } from './dexCalculators';
 
 export class SolanaTokenMonitor {
     connection: Connection;
@@ -128,6 +121,34 @@ export class SolanaTokenMonitor {
         return null;
     }
 
+    async fetchPrice(address: string): Promise<any> {
+        const url = "https://api.dexscreener.io/latest/dex/tokens/" + address;
+        //locked liquidity
+        try {
+            const response = await fetch(url);
+            const data = await response.json();
+            const calculators = new DexCalculators(data);
+
+            const total5mVolume = calculators.calculateM5VolumeSum();
+            const price = calculators.calculateAveragePriceUsd();
+            const fdv = calculators.calculateTotalFdV();
+            const liquidityUsd = calculators.calculateTotalLiquidityUsd();
+            const vwap = calculators.calculateVWAP();
+
+            return {
+                price,
+                total5mVolume,
+                fdv,
+                liquidityUsd,
+                vwap
+            };
+        } catch (error) {
+            const errorMessage = `Can't find token, ${address}`;
+            console.error(errorMessage);
+            return null;
+        }
+    }
+
     async metaLookup(address: string): Promise<any> {
         const tokenPublicKey = new PublicKey(address);
         try {
@@ -176,13 +197,11 @@ export class SolanaTokenMonitor {
         try {
             const response = await fetch(uri);
             if (!response.ok) {
-                throw new Error(`Failed to fetch ${uri}: ${response.statusText}`);
+                return "";
             }
-
             return await response.json();
         } catch (error) {
-            console.error(`Error fetching JSON from ${uri}:`, error);
-            return null;
+            return "";
         }
     }
 

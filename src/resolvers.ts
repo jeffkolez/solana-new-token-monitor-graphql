@@ -37,6 +37,22 @@ export const resolvers = {
         throw new Error('Unable to fetch token metadata');
       }
     },
+    getPriceData: async (_: any, { address }: { address: string }) => {
+      const solanaMonitor = new SolanaTokenMonitor();
+      try {
+        const priceData = await solanaMonitor.fetchPrice(address);
+        return {
+          price: priceData.price,
+          total5mVolume: priceData.total5mVolume,
+          fdv: priceData.fdv,
+          liquidityUsd: priceData.liquidityUsd,
+          vwap: priceData.vwap
+        };
+      } catch (error) {
+        console.error('Error fetching token price data:', error);
+        throw new Error('Unable to fetch token price data');
+      }
+    },
   },
   Mutation: {
     addToken: (
